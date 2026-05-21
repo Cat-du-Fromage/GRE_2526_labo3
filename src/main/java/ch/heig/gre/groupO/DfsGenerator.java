@@ -1,4 +1,4 @@
-package ch.heig.gre.groupX;
+package ch.heig.gre.groupO;
 
 import ch.heig.gre.maze.MazeBuilder;
 import ch.heig.gre.maze.MazeGenerator;
@@ -8,7 +8,6 @@ import ch.heig.gre.util.ArrayUtil;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.Stack;
 
 // TODO : reprendre le code du labo 1
 public final class DfsGenerator implements MazeGenerator {
