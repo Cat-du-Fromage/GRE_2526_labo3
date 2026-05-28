@@ -1,10 +1,13 @@
 package ch.heig.gre.groupO;
 
+import ch.heig.gre.Keys;
 import ch.heig.gre.graph.GridGraph;
 import ch.heig.gre.graph.GridGraph2D;
 import ch.heig.gre.graph.PositiveWeightFunction;
+import ch.heig.gre.maze.DistanceLabelling;
 import ch.heig.gre.maze.MazeBuilder;
 import ch.heig.gre.maze.MazeGenerator;
+import ch.heig.gre.maze.MazeSolver;
 import ch.heig.gre.maze.impl.GridMazeBuilder;
 import ch.heig.gre.maze.impl.MazeTuner;
 import ch.heig.gre.maze.impl.ShenaniganWeightFunction;
@@ -47,25 +50,12 @@ public final class Experiment {
           0.5, 0.05, 25, 5, 100)
   };
 
-  /**
-   * <p>Paramètres d'une expérience, avec une description approximative de leurs effets sur la génération.</p>
-   *
-   * <p>À passer en paramètre de la méthode {@link #generateGrid} pour générer un labyrinthe.</p>
-   *
-   * @param description            Description de l'expérience
-   * @param reliefDensityFactor    Facteur de densité du relief
-   * @param wallRemovalProbability Probabilité de suppression d'un mur lors de la génération du relief
-   * @param reliefRadiusRatio      Ratio du rayon de la zone de relief par rapport à la taille du labyrinthe
-   * @param reliefSummitsPerRange  Nombre de sommets de relief générés par chaîne de montagnes
-   * @param reliefMaxSummitWeight  Poids maximal d'un sommet de relief
-   */
   record Params(String description,
                 double reliefDensityFactor,
                 double wallRemovalProbability,
                 double reliefRadiusRatio,
                 int reliefSummitsPerRange,
-                int reliefMaxSummitWeight
-  ) {}
+                int reliefMaxSummitWeight) {}
 
   static {
     var g = new GridGraph(SIDE);
@@ -74,15 +64,43 @@ public final class Experiment {
   }
 
   public static void main(String[] args) {
-    // TODO
+    MazeGenerator generator = new DfsGenerator();
+    RandomGenerator rng = RandomGenerator.getDefault();
+
+    AStar[] admissibleSolver = {
+        new AStar(AStar.Heuristic.DIJKSTRA),
+        new AStar(AStar.Heuristic.INFINITY_NORM),
+        new AStar(AStar.Heuristic.EUCLIDEAN_NORM),
+        new AStar(AStar.Heuristic.MANHATTAN)
+    };
+
+    String[] admissibleSolverNames = {
+        "Dijkstra",
+        "A* - Norme infinie",
+        "A* - Norme euclidienne",
+        "A* - Manhattan"
+    };
+
+    // Valeurs de K pour k_Manhattan
+    double[] kValues = {0.5, 2, 4, 6, 8};
+
+    for(Params params : EXPERIMENTS) {
+      System.out.println("Expérience : " + params.description());
+
+      // Accumulateurs pour H0 à H3
+      double[] totalLength = new double[4];
+      double[] totalProcessedVertices = new double[4];
+      double[] totalReduction = new double[4];
+      double[] totalTau = new double[4];
+
+
+    }
+
+    // TODO continuer
+
+
   }
 
-  /**
-   * Résultat de la méthode {@link #generateGrid}, fournit un labyrinthe et une fonction de pondération associée.
-   *
-   * @param maze    labyrinthe généré
-   * @param weights Fonction de pondération associée
-   */
   private record GenerationResult(GridGraph2D maze, PositiveWeightFunction weights) {}
 
   /**
