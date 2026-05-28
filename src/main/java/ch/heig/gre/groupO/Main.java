@@ -28,7 +28,7 @@ public class Main extends Application {
                         .setAllowsWeightsTuning(false)
                         .setSolverColorFn(Config.DISTANCE_BASED_SOLVER_COLOR_FN),
                 new DfsGenerator(),
-                List.of(new ChoiceItem<>("BFS", new AStar(AStar.Heuristic.DIJKSTRA))));
+                List.of(new ChoiceItem<>("AStar", new AStar(AStar.Heuristic.EUCLIDEAN_NORM))));
 
         stage.show();
     }
