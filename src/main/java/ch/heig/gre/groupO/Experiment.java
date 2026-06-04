@@ -103,13 +103,13 @@ public final class Experiment {
     for (int e = 0; e < EXPERIMENTS.length; e++) {
       Params params = EXPERIMENTS[e];
 
-      // --- Accumulateurs pour les heuristiques optimistes (4 algorithmes) ---
+      // Accumulateurs pour les heuristiques optimistes (4 algorithmes)
       double[] sumLength = new double[4];
       double[] sumProcessed = new double[4];
       double[] sumReductionH0 = new double[4]; // réduction % du nb de sommets traités vs H0
       double[] sumTau = new double[4];         // taux d'expansion utile
 
-      // --- Accumulateurs pour l'étude de H4 ---
+      // Accumulateurs pour l'étude de H4
       int nbK = K_VALUES.length;
       int[] countOptimal = new int[nbK];
       double[] sumLengthK = new double[nbK];
@@ -177,7 +177,7 @@ public final class Experiment {
         }
       }
 
-      // --- Affichage : heuristiques optimistes ---
+      // Affichage : heuristiques optimistes
       System.out.println("  Heuristiques optimistes (moyennes sur N instances) :");
       System.out.printf("  %-16s %16s %18s %20s %16s%n",
           "Heuristique", "Longueur moy.", "Sommets traites", "Reduction/H0 (%)", "Tau exp. moy.");
@@ -190,7 +190,7 @@ public final class Experiment {
             sumTau[a] / N);
       }
 
-      // --- Affichage : étude de H4 ---
+      // Affichage : étude de H4
       System.out.println("  Heuristique H4 (K-Manhattan) :");
       System.out.printf("  %-6s %9s %16s %11s %11s %11s %18s %18s%n",
           "K", "% optim", "Longueur moy.", "Err min%", "Err moy%", "Err max%", "Reduc/H3 (abs)", "Reduc/H3 (%)");
