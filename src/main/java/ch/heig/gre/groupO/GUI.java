@@ -17,7 +17,7 @@ public class GUI extends Application {
   public void start(Stage stage) throws IOException {
     FXMLLoader fxmlLoader = new FXMLLoader(MainViewController.class.getResource("mainView.fxml"));
     Parent parent = fxmlLoader.load();
-    Scene scene = new Scene(parent, 1200, 950);
+    Scene scene = new Scene(parent, 1200, 750);
     stage.setTitle("Redrum");
     stage.setScene(scene);
 
