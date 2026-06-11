@@ -1,11 +1,11 @@
 # Rapport labo 3 GRE - A*
-Auteurs : Bleuer Rémy, Duruz Florian
-Date : 11.06.2026
-Groupe : O
+- Auteurs : Bleuer Rémy, Duruz Florian
+- Date : 11.06.2026
+- Groupe : O
 
 ## Experiments
 
-Nous avons utilisé Deepseek pour transformer la sortie de l'IDE pour un résultat markdown.
+Nous avons utilisé Deepseek pour transformer la sortie de l'IDE pour un résultat plus propre en markdown.
 
 ## [1/6] Relief très peu dense, labyrinthe très ouvert
 
