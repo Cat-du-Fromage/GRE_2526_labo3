@@ -194,7 +194,7 @@ public final class Experiment {
       System.out.printf("%-6s %9s %16s %11s %11s %11s %18s %18s%n",
           "K", "% optim", "Longueur moy.", "Err min%", "Err moy%", "Err max%", "Reduc/H3 (abs)", "Reduc/H3 (%)");
       for (int k = 0; k < nbK; k++) {
-        System.out.printf("%-6.2f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
+        System.out.printf("%-6.1f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
             K_VALUES[k],
             100.0 * countOptimal[k] / N,
             sumLengthK[k] / N,
