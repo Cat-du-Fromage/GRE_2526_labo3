@@ -62,42 +62,40 @@ public final class AStar implements MazeSolver {
     // closed[i] : i a déjà été traité (peut être ré-ouvert si l'heuristique est non consistante)
     final boolean[] closed = new boolean[verticesCount];
 
-    // File de priorité ordonnée par f(i) = lambda(i) + h(i). long pour éviter les overflows.
+    // File de priorité ordonnée par f(i) = lambda(i) + h(i).
     // Entrées : [priorité, sommet]
-    PriorityQueue<long[]> opened = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));
+    PriorityQueue<int[]> opened = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));
 
     lambda[source] = 0;
     distances.setLabel(source, 0);
-    opened.add(new long[]{ heuristicDst(source, xt, yt, width, cmin), source });
+    opened.add(new int[]{ heuristicDst(source, xt, yt, width, cmin), source });
 
     int processed = 0;
 
     while (!opened.isEmpty()) {
-      long[] top = opened.poll();
-      long priority = top[0];
-      int u = (int) top[1];
+      int[] top = opened.poll();
+      int priority = top[0];
+      int current = top[1];
 
-      // Entrée obsolète : lambda[u] a été amélioré depuis l'empilement (heuristique non consistante)
-      // ou u a déjà été traité avec une meilleure priorité.
-      if (closed[u]) continue;
-      if (priority > (long) lambda[u] + heuristicDst(u, xt, yt, width, cmin)) continue;
+      if (closed[current]) continue;
+      if (priority > lambda[current] + heuristicDst(current, xt, yt, width, cmin)) continue;
 
-      closed[u] = true;
+      closed[current] = true;
       processed++;
 
-      if (u == destination) break;
+      if (current == destination) break;
 
-      for (int neighbor : grid.neighbors(u)) {
-        int weight = weights.get(u, neighbor);
-        int newDist = lambda[u] + weight;
+      for (int neighbor : grid.neighbors(current)) {
+        int weight = weights.get(current, neighbor);
+        int newDist = lambda[current] + weight;
         if (newDist < lambda[neighbor]) {
           lambda[neighbor] = newDist;
-          predecessors[neighbor] = u;
+          predecessors[neighbor] = current;
           distances.setLabel(neighbor, newDist);
           // Si neighbor était fermé, on autorise sa ré-ouverture (cas heuristique non consistante)
           closed[neighbor] = false;
-          long f = (long) newDist + heuristicDst(neighbor, xt, yt, width, cmin);
-          opened.add(new long[]{ f, neighbor });
+          int f = newDist + heuristicDst(neighbor, xt, yt, width, cmin);
+          opened.add(new int[]{ f, neighbor });
         }
       }
     }
@@ -128,19 +126,19 @@ public final class AStar implements MazeSolver {
     return new Result(path, meta);
   }
 
-  /** Estimation heuristique de la distance restant à parcourir du sommet {@code i} à la destination. */
-  private long heuristicDst(int i, int xt, int yt, int width, int cmin) {
+  /** Estimation heuristique de la distance restant à parcourir du sommet i à la destination. */
+  private int heuristicDst(int i, int xt, int yt, int width, int cmin) {
     int xi = i % width;
     int yi = i / width;
     int dx = Math.abs(xt - xi);
     int dy = Math.abs(yt - yi);
 
     return switch (heuristic) {
-      case DIJKSTRA -> 0L;
-      case INFINITY_NORM -> (long) cmin * Math.max(dx, dy);
-      case EUCLIDEAN_NORM -> (long) (cmin * Math.floor(Math.sqrt((double) dx * dx + dy * dy)));
-      case MANHATTAN -> (long) cmin * (dx + dy);
-      case K_MANHATTAN -> (long) (kManhattan * cmin * (dx + dy));
+      case DIJKSTRA -> 0;
+      case INFINITY_NORM -> cmin * Math.max(dx, dy);
+      case EUCLIDEAN_NORM -> (int)(cmin * Math.floor(Math.sqrt((double) dx * dx + dy * dy)));
+      case MANHATTAN -> cmin * (dx + dy);
+      case K_MANHATTAN -> (int)(kManhattan * cmin * (dx + dy));
     };
   }
 }
