@@ -13,7 +13,6 @@ import ch.heig.gre.maze.impl.MazeTuner;
 import ch.heig.gre.maze.impl.ShenaniganWeightFunction;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
@@ -88,14 +87,14 @@ public final class Experiment {
   public static void main(String[] args) {
     DfsGenerator generator = new DfsGenerator();
 
-    // Les quatre heuristiques optimistes (admissibles), dans l'ordre de dominance attendu.
+    // Les quatre heuristiques optimistes (admissibles)
     AStar[] optimistic = {
         new AStar(AStar.Heuristic.DIJKSTRA),
         new AStar(AStar.Heuristic.INFINITY_NORM),
         new AStar(AStar.Heuristic.EUCLIDEAN_NORM),
         new AStar(AStar.Heuristic.MANHATTAN),
     };
-    String[] optimisticNames = {"H0 (Dijkstra)", "H1 (L-inf)", "H2 (L2)", "H3 (Manhattan)"};
+    String[] optimisticNames = {"H0 (DIJKSTRA)", "H1 (INFINITY_NORM)", "H2 (EUCLIDEAN_NORM)", "H3 (MANHATTAN)"};
 
     System.out.printf("Grille %dx%d, source=%d, destination=%d, N=%d%n",
         SIDE, SIDE, SRC, DST, N);
@@ -103,11 +102,11 @@ public final class Experiment {
     for (int e = 0; e < EXPERIMENTS.length; e++) {
       Params params = EXPERIMENTS[e];
 
-      // Accumulateurs pour les heuristiques optimistes (4 algorithmes)
+      // Accumulateurs pour les heuristiques optimistes
       double[] sumLength = new double[4];
       double[] sumProcessed = new double[4];
       double[] sumReductionH0 = new double[4]; // réduction % du nb de sommets traités vs H0
-      double[] sumTau = new double[4];         // taux d'expansion utile
+      double[] sumTaux = new double[4]; // taux d'expansion utile
 
       // Accumulateurs pour l'étude de H4
       int nbK = K_VALUES.length;
@@ -116,8 +115,8 @@ public final class Experiment {
       double[] minErr = new double[nbK];
       double[] maxErr = new double[nbK];
       double[] sumErr = new double[nbK];
-      double[] sumRedAbsH3 = new double[nbK]; // réduction absolue du nb de sommets traités vs H3
-      double[] sumRedRelH3 = new double[nbK]; // réduction relative (%) vs H3
+      double[] sumRedAbsH3 = new double[nbK]; // réduction absolue du nbr de sommets traités vs. H3
+      double[] sumRedRelH3 = new double[nbK]; // réduction relative (%) vs. H3
       Arrays.fill(minErr, Double.MAX_VALUE);
 
       RandomGenerator rng = new Random(SEED);
@@ -129,7 +128,7 @@ public final class Experiment {
         GridGraph2D maze = gen.maze();
         PositiveWeightFunction wf = gen.weights();
 
-        // Exécution des 4 heuristiques optimistes sur la même instance.
+        // Exécution des 4 heuristiques optimistes sur la même instance
         int[] len = new int[4];
         int[] proc = new int[4];
         int[] pathSz = new int[4];
@@ -143,10 +142,10 @@ public final class Experiment {
           sumLength[a] += len[a];
           sumProcessed[a] += proc[a];
           sumReductionH0[a] += 100.0 * (proc[0] - proc[a]) / proc[0];
-          sumTau[a] += (double) pathSz[a] / proc[a];
+          sumTaux[a] += (double) pathSz[a] / proc[a];
         }
 
-        // H0 et H3 étant admissibles, len[0] est la longueur optimale de référence.
+        // H0 et H3 étant admissibles, len[0] est la longueur optimal de référence
         int optimalLength = len[0];
         int processedH3 = proc[3];
 
@@ -178,24 +177,24 @@ public final class Experiment {
       }
 
       // Affichage : heuristiques optimistes
-      System.out.println("  Heuristiques optimistes (moyennes sur N instances) :");
-      System.out.printf("  %-16s %16s %18s %20s %16s%n",
-          "Heuristique", "Longueur moy.", "Sommets traites", "Reduction/H0 (%)", "Tau exp. moy.");
+      System.out.println("Heuristiques optimistes (moyennes sur N instances) :");
+      System.out.printf("%-22s %16s %22s %22s %16s%n",
+          "Heuristique", "Longueur moy.", "Moy. sommets traites", "Moy. Reduction/H0 (%)", "Taux exp. moy.");
       for (int a = 0; a < 4; a++) {
-        System.out.printf("  %-16s %16.3f %18.3f %20.3f %16.4f%n",
+        System.out.printf("%-22s %16.3f %22.3f %22.3f %16.4f%n",
             optimisticNames[a],
             sumLength[a] / N,
             sumProcessed[a] / N,
             sumReductionH0[a] / N,
-            sumTau[a] / N);
+            sumTaux[a] / N);
       }
 
       // Affichage : étude de H4
-      System.out.println("  Heuristique H4 (K-Manhattan) :");
-      System.out.printf("  %-6s %9s %16s %11s %11s %11s %18s %18s%n",
+      System.out.println("\nHeuristique H4 (K_MANHATTAN) :");
+      System.out.printf("%-6s %9s %16s %11s %11s %11s %18s %18s%n",
           "K", "% optim", "Longueur moy.", "Err min%", "Err moy%", "Err max%", "Reduc/H3 (abs)", "Reduc/H3 (%)");
       for (int k = 0; k < nbK; k++) {
-        System.out.printf("  %-6.2f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
+        System.out.printf("%-6.2f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
             K_VALUES[k],
             100.0 * countOptimal[k] / N,
             sumLengthK[k] / N,

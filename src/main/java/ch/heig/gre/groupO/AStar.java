@@ -51,7 +51,7 @@ public final class AStar implements MazeSolver {
     final int xt = destination % width;
     final int yt = destination / width;
 
-    // λ[i] : meilleure distance connue de source à i
+    // lambda[i] : meilleure distance connue de source à i
     final int[] lambda = new int[verticesCount];
     Arrays.fill(lambda, Integer.MAX_VALUE);
 
@@ -62,7 +62,7 @@ public final class AStar implements MazeSolver {
     // closed[i] : i a déjà été traité (peut être ré-ouvert si l'heuristique est non consistante)
     final boolean[] closed = new boolean[verticesCount];
 
-    // File de priorité ordonnée par f(i) = λ(i) + h(i). long pour éviter les overflows.
+    // File de priorité ordonnée par f(i) = lambda(i) + h(i). long pour éviter les overflows.
     // Entrées : [priorité, sommet]
     PriorityQueue<long[]> opened = new PriorityQueue<>(Comparator.comparingLong(a -> a[0]));
 
@@ -77,7 +77,7 @@ public final class AStar implements MazeSolver {
       long priority = top[0];
       int u = (int) top[1];
 
-      // Entrée obsolète : λ[u] a été amélioré depuis l'empilement (heuristique non consistante)
+      // Entrée obsolète : lambda[u] a été amélioré depuis l'empilement (heuristique non consistante)
       // ou u a déjà été traité avec une meilleure priorité.
       if (closed[u]) continue;
       if (priority > (long) lambda[u] + heuristicDst(u, xt, yt, width, cmin)) continue;
@@ -114,7 +114,7 @@ public final class AStar implements MazeSolver {
       Collections.reverse(path);
     }
 
-    // Avec une heuristique non consistante, λ[destination] peut différer de la longueur réelle
+    // Avec une heuristique non consistante, lamda[destination] peut différer de la longueur réelle
     // du chemin codé par predecessors. On recalcule donc la longueur en sommant les poids le long du chemin.
     int pathLength = 0;
     for (int i = 1; i < path.size(); i++) {
