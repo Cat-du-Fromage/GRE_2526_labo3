@@ -13,7 +13,6 @@ import ch.heig.gre.maze.impl.MazeTuner;
 import ch.heig.gre.maze.impl.ShenaniganWeightFunction;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Random;
 import java.util.random.RandomGenerator;
 
@@ -85,144 +84,126 @@ public final class Experiment {
     TOPOLOGY = g;
   }
 
-  // Indices des heuristiques admissibles servant de références : H0 (Dijkstra, K=0) et H3 (Manhattan, K=1).
-  private static final int H0_INDEX = 0;
-  private static final int H3_INDEX = 3;
-
   public static void main(String[] args) {
-    MazeGenerator mazeGenerator = new DfsGenerator();
+    DfsGenerator generator = new DfsGenerator();
 
-    // Les quatre heuristiques optimistes (admissibles), dans l'ordre de dominance attendu.
-    AStar[] optimisticSolvers = {
+    // Les quatre heuristiques optimistes (admissibles)
+    AStar[] optimistic = {
         new AStar(AStar.Heuristic.DIJKSTRA),
         new AStar(AStar.Heuristic.INFINITY_NORM),
         new AStar(AStar.Heuristic.EUCLIDEAN_NORM),
         new AStar(AStar.Heuristic.MANHATTAN),
     };
-    String[] optimisticLabels = {"H0 (Dijkstra)", "H1 (L-inf)", "H2 (L2)", "H3 (Manhattan)"};
-    int nbOptimisticHeuristics = optimisticSolvers.length;
-    int nbKValues = K_VALUES.length;
+    String[] optimisticNames = {"H0 (DIJKSTRA)", "H1 (INFINITY_NORM)", "H2 (EUCLIDEAN_NORM)", "H3 (MANHATTAN)"};
 
-    System.out.printf(Locale.US, "Grille %dx%d, source=%d, destination=%d, N=%d%n",
+    System.out.printf("Grille %dx%d, source=%d, destination=%d, N=%d%n",
         SIDE, SIDE, SRC, DST, N);
 
-    for (int experimentIndex = 0; experimentIndex < EXPERIMENTS.length; experimentIndex++) {
-      Params params = EXPERIMENTS[experimentIndex];
+    for (int e = 0; e < EXPERIMENTS.length; e++) {
+      Params params = EXPERIMENTS[e];
 
-      // Accumulateurs pour les heuristiques optimistes (4 algorithmes)
-      double[] sumLength = new double[nbOptimisticHeuristics];
-      double[] sumProcessedVertices = new double[nbOptimisticHeuristics];
-      double[] sumReductionVsH0 = new double[nbOptimisticHeuristics];       // réduction % du nb de sommets traités vs H0
-      double[] sumUsefulExpansionRate = new double[nbOptimisticHeuristics]; // tau = |chemin| / |sommets traites|
+      // Accumulateurs pour les heuristiques optimistes
+      double[] sumLength = new double[4];
+      double[] sumProcessed = new double[4];
+      double[] sumReductionH0 = new double[4]; // réduction % du nb de sommets traités vs H0
+      double[] sumTaux = new double[4]; // taux d'expansion utile
 
-      // Accumulateurs de l'étude de H4 (un par valeur de K).
-      int[] optimalSolutionCount = new int[nbKValues];
-      double[] sumLengthH4 = new double[nbKValues];
-      double[] minRelativeError = new double[nbKValues];
-      double[] maxRelativeError = new double[nbKValues];
-      double[] sumRelativeError = new double[nbKValues];
-      double[] sumAbsoluteReductionVsH3 = new double[nbKValues];// réduction absolue du nb de sommets traités vs H3
-      double[] sumRelativeReductionVsH3 = new double[nbKValues];// réduction relative (%) vs H3
-      Arrays.fill(minRelativeError, Double.MAX_VALUE);
-
+      // Accumulateurs pour l'étude de H4
+      int nbK = K_VALUES.length;
+      int[] countOptimal = new int[nbK];
+      double[] sumLengthK = new double[nbK];
+      double[] minErr = new double[nbK];
+      double[] maxErr = new double[nbK];
+      double[] sumErr = new double[nbK];
+      double[] sumRedAbsH3 = new double[nbK]; // réduction absolue du nbr de sommets traités vs. H3
+      double[] sumRedRelH3 = new double[nbK]; // réduction relative (%) vs. H3
+      Arrays.fill(minErr, Double.MAX_VALUE);
 
       RandomGenerator rng = new Random(SEED);
 
-      System.out.printf(Locale.US, "%n[%d/%d] %s%n",
-          experimentIndex + 1, EXPERIMENTS.length, params.description());
+      System.out.printf("%n[%d/%d] %s%n", e + 1, EXPERIMENTS.length, params.description());
 
-      for (int instanceIndex = 0; instanceIndex < N; instanceIndex++) {
-        GenerationResult generation = generateGrid(mazeGenerator, params, rng);
-        GridGraph2D maze = generation.maze();
-        PositiveWeightFunction weights = generation.weights();
+      for (int i = 0; i < N; i++) {
+        GenerationResult gen = generateGrid(generator, params, rng);
+        GridGraph2D maze = gen.maze();
+        PositiveWeightFunction wf = gen.weights();
 
-        // ----- Heuristiques optimistes : on les exécute toutes sur la même instance -----
-        SolveStats[] optimisticStats = new SolveStats[nbOptimisticHeuristics];
-        for (int heuristicIndex = 0; heuristicIndex < nbOptimisticHeuristics; heuristicIndex++) {
-          optimisticStats[heuristicIndex] = SolveStats.from(solveMaze(optimisticSolvers[heuristicIndex], maze, weights));
+        // Exécution des 4 heuristiques optimistes sur la même instance
+        int[] len = new int[4];
+        int[] proc = new int[4];
+        int[] pathSz = new int[4];
+        for (int a = 0; a < 4; a++) {
+          MazeSolver.Result r = run(optimistic[a], maze, wf);
+          len[a] = r.metadata().get(Keys.LENGTH);
+          proc[a] = r.metadata().get(Keys.NB_PROCESSED_VERTICES);
+          pathSz[a] = r.path().size();
         }
-        int processedVerticesByH0 = optimisticStats[H0_INDEX].processedVertices();
-        for (int heuristicIndex = 0; heuristicIndex < nbOptimisticHeuristics; heuristicIndex++) {
-          SolveStats stats = optimisticStats[heuristicIndex];
-          sumLength[heuristicIndex] += stats.pathLength();
-          sumProcessedVertices[heuristicIndex] += stats.processedVertices();
-          sumReductionVsH0[heuristicIndex] += 100.0 * (processedVerticesByH0 - stats.processedVertices()) / processedVerticesByH0;
-          sumUsefulExpansionRate[heuristicIndex] += (double) stats.pathSize() / stats.processedVertices();
+        for (int a = 0; a < 4; a++) {
+          sumLength[a] += len[a];
+          sumProcessed[a] += proc[a];
+          sumReductionH0[a] += 100.0 * (proc[0] - proc[a]) / proc[0];
+          sumTaux[a] += (double) pathSz[a] / proc[a];
         }
 
-        // H0 et H3 sont admissibles : leur longueur est la longueur optimale de référence.
-        int optimalLength = optimisticStats[H0_INDEX].pathLength();
-        int processedVerticesByH3 = optimisticStats[H3_INDEX].processedVertices();
+        // H0 et H3 étant admissibles, len[0] est la longueur optimal de référence
+        int optimalLength = len[0];
+        int processedH3 = proc[3];
 
-        //Étude de H4 sur la même instance (K=0 ≡ H0, K=1 ≡ H3 : réutilisation pour éviter un re-solve)
-        for (int kIndex = 0; kIndex < nbKValues; kIndex++) {
-          double k = K_VALUES[kIndex];
-          SolveStats stats;
-          if (k == 0.0) {
-            stats = optimisticStats[H0_INDEX];
-          } else if (k == 1.0) {
-            stats = optimisticStats[H3_INDEX];
+        // Étude de H4 sur la même instance. K=0 réutilise H0, K=1 réutilise H3.
+        for (int k = 0; k < nbK; k++) {
+          int length;
+          int processed;
+          if (K_VALUES[k] == 0.0) {
+            length = len[0];
+            processed = proc[0];
+          } else if (K_VALUES[k] == 1.0) {
+            length = len[3];
+            processed = proc[3];
           } else {
-            stats = SolveStats.from(solveMaze(new AStar(AStar.Heuristic.K_MANHATTAN, k), maze, weights));
+            MazeSolver.Result r = run(new AStar(AStar.Heuristic.K_MANHATTAN, K_VALUES[k]), maze, wf);
+            length = r.metadata().get(Keys.LENGTH);
+            processed = r.metadata().get(Keys.NB_PROCESSED_VERTICES);
           }
 
-          double relativeErrorPercent = 100.0 * (stats.pathLength() - optimalLength) / optimalLength;
-          if (stats.pathLength() == optimalLength) optimalSolutionCount[kIndex]++;
-          sumLengthH4[kIndex] += stats.pathLength();
-          sumRelativeError[kIndex] += relativeErrorPercent;
-          minRelativeError[kIndex] = Math.min(minRelativeError[kIndex], relativeErrorPercent);
-          maxRelativeError[kIndex] = Math.max(maxRelativeError[kIndex], relativeErrorPercent);
-          sumAbsoluteReductionVsH3[kIndex] += processedVerticesByH3 - stats.processedVertices();
-          sumRelativeReductionVsH3[kIndex] += 100.0 * (processedVerticesByH3 - stats.processedVertices()) / processedVerticesByH3;
+          double err = 100.0 * (length - optimalLength) / optimalLength;
+          if (length == optimalLength) countOptimal[k]++;
+          sumLengthK[k] += length;
+          sumErr[k] += err;
+          minErr[k] = Math.min(minErr[k], err);
+          maxErr[k] = Math.max(maxErr[k], err);
+          sumRedAbsH3[k] += (processedH3 - processed);
+          sumRedRelH3[k] += 100.0 * (processedH3 - processed) / processedH3;
         }
       }
 
-
       // Affichage : heuristiques optimistes
-      System.out.println("  Heuristiques optimistes (moyennes sur N instances) :");
-      System.out.printf(Locale.US, "  %-16s %16s %18s %20s %16s%n",
-          "Heuristique", "Longueur moy.", "Sommets traites", "Reduction/H0 (%)", "Tau exp. moy.");
-      for (int heuristicIndex = 0; heuristicIndex < nbOptimisticHeuristics; heuristicIndex++) {
-        System.out.printf(Locale.US, "  %-16s %16.3f %18.3f %20.3f %16.4f%n",
-            optimisticLabels[heuristicIndex],
-            sumLength[heuristicIndex] / N,
-            sumProcessedVertices[heuristicIndex] / N,
-            sumReductionVsH0[heuristicIndex] / N,
-            sumUsefulExpansionRate[heuristicIndex] / N);
+      System.out.println("Heuristiques optimistes (moyennes sur N instances) :");
+      System.out.printf("%-22s %16s %22s %22s %16s%n",
+          "Heuristique", "Longueur moy.", "Moy. sommets traites", "Moy. Reduction/H0 (%)", "Taux exp. moy.");
+      for (int a = 0; a < 4; a++) {
+        System.out.printf("%-22s %16.3f %22.3f %22.3f %16.4f%n",
+            optimisticNames[a],
+            sumLength[a] / N,
+            sumProcessed[a] / N,
+            sumReductionH0[a] / N,
+            sumTaux[a] / N);
       }
 
       // Affichage : étude de H4
-      System.out.println("  Heuristique H4 (K-Manhattan) :");
-      System.out.printf(Locale.US, "  %-6s %9s %16s %11s %11s %11s %18s %18s%n",
+      System.out.println("\nHeuristique H4 (K_MANHATTAN) :");
+      System.out.printf("%-6s %9s %16s %11s %11s %11s %18s %18s%n",
           "K", "% optim", "Longueur moy.", "Err min%", "Err moy%", "Err max%", "Reduc/H3 (abs)", "Reduc/H3 (%)");
-      for (int kIndex = 0; kIndex < nbKValues; kIndex++) {
-        System.out.printf(Locale.US, "  %-6.2f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
-            K_VALUES[kIndex],
-            100.0 * optimalSolutionCount[kIndex] / N,
-            sumLengthH4[kIndex] / N,
-            minRelativeError[kIndex],
-            sumRelativeError[kIndex] / N,
-            maxRelativeError[kIndex],
-            sumAbsoluteReductionVsH3[kIndex] / N,
-            sumRelativeReductionVsH3[kIndex] / N);
+      for (int k = 0; k < nbK; k++) {
+        System.out.printf("%-6.2f %9.2f %16.3f %11.4f %11.4f %11.4f %18.3f %18.3f%n",
+            K_VALUES[k],
+            100.0 * countOptimal[k] / N,
+            sumLengthK[k] / N,
+            minErr[k],
+            sumErr[k] / N,
+            maxErr[k],
+            sumRedAbsH3[k] / N,
+            sumRedRelH3[k] / N);
       }
-    }
-  }
-
-  /**
-   * Métriques extraites du résultat d'une résolution, pour une instance donnée.
-   *
-   * @param pathLength        Longueur (somme des poids) du chemin trouvé.
-   * @param processedVertices Nombre de sommets retirés de la file de priorité et dont les voisins ont été relâchés.
-   * @param pathSize          Nombre de sommets composant le chemin trouvé.
-   */
-  private record SolveStats(int pathLength, int processedVertices, int pathSize) {
-    static SolveStats from(MazeSolver.Result result) {
-      return new SolveStats(
-          result.metadata().get(Keys.LENGTH),
-          result.metadata().get(Keys.NB_PROCESSED_VERTICES),
-          result.path().size()
-      );
     }
   }
 
@@ -230,13 +211,13 @@ public final class Experiment {
    * Exécute un solveur sur un labyrinthe donné, entre la source et la destination fixées,
    * avec un étiquetage de distances neuf.
    *
-   * @param solver  Solveur à exécuter.
-   * @param maze    Labyrinthe à résoudre.
-   * @param weights Fonction de pondération associée.
+   * @param solver Solveur à exécuter.
+   * @param maze   Labyrinthe à résoudre.
+   * @param wf     Fonction de pondération associée.
    * @return Le résultat de la résolution (chemin + métadonnées).
    */
-  private static MazeSolver.Result solveMaze(MazeSolver solver, GridGraph2D maze, PositiveWeightFunction weights) {
-    return solver.solve(maze, weights, SRC, DST, new DistanceLabelling(maze.nbVertices()));
+  private static MazeSolver.Result run(MazeSolver solver, GridGraph2D maze, PositiveWeightFunction wf) {
+    return solver.solve(maze, wf, SRC, DST, new DistanceLabelling(maze.nbVertices()));
   }
 
   /**
