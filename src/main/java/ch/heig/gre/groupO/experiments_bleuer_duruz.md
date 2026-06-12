@@ -161,6 +161,40 @@ Nous avons utilisé Deepseek pour transformer la sortie de l'IDE pour un résult
 
 ### L’ordre de dominance H0 ≺ H1 ≺ H2 ≺ H3 est-il confirmé par vos résultats ? L’heuristique H4 avec K=1/2 s’insère-t-elle dans cette séquence ?
 
+1. Oui, l’ordre de dominance H0 ≺ H1 ≺ H2 ≺ H3 est confirmé. Les 4 heuristiques ont toujours la même longeur moyenne sur les 6 expériencs et le nombre de sommet traité diminue toujours. On a pour l'experience 1, H0 qui traite `63054,190` sommets et
+   H3 qui traite `8315,060` sommets, ça diminue. Ce qui est cohérent avec la théorie, plus une heuristique est proche de la vraie distance, moins A* explire de sommets.
+2. La colonne `Reduc/H3 (abs)` indique le nombre de sommets qui sont traités en + ou en - par rapport à H3. Donc toujours pour l'expèrience 1, la réduction de H4(k=1/2) vaut `-17234,830` et H3 traite toujours `8315,060` sommets. On peut donc calculer
+   que H4(k=1/2) traite `8315,060 + 17234,830 = 25549.89` sommets. Cela le place entre H0 et H1. Ce résultat se confirme au travers des 6 expérience. On peut donc affirmer que H4 s'insère dans la séquence. Et
+   la séquence finale est : H0 ≺ H4(k=1/2) ≺ H1 ≺ H2 ≺ H3.
+
+Pour la confirmation, voici le nbr de sommets que traite H4 :
+- Expérience 2 : 12715,020 + 16600,910 = 29315.93, se trouve bien entre H0 = 64913,760 et H1 = 20694,980
+- Expérience 3 : 43277,420 + 12998,050 = 56275.47, se trouve bien entre H0 = 74007,330 et H1 = 50232,040
+- Expérience 4 : 53137,510 + 14175,300 = 67312.81, se trouve bien entre H0 = 86748,170 et H1 = 60687,520
+- Expérience 5 : 52756,530 + 7922,690 = 60679.22, se trouve bien entre H0 = 70298,320 et H1 = 56990,090
+- Expérience 6 : 86961,240 + 5830,980 = 92792.22, se trouve bien entre H0 = 98916,320 et H1 = 90243,180
+
 ###  Lorsque K > 1, H4 n’est plus optimiste et A* ne garantit plus l’optimalité de la solution. En vous appuyant sur vos résultats et observations, discutez le compromis entre qualité de la solution et efficacité de la recherche.
 
+On peut tirer deux observations de nos résultats :
+
+1. Les gains de vitesse ont atteint le max assez rapidement. Sur l'expérience 1, H4(k=2) réduit les sommets traités de `92,63%` par rapport à H3, on passe de `8315,060` à `8315,060 - 7733,120 = 581.94` sommets. La longeur du chemin étant de `478,700`, c'est à peine moins que les `582` sommets précédents.
+   Augmenter k et passer à k = 8 n'apporte rien de plus, on ne peut pas desencdre plus bas que le nbr de sommets dans le chemin final.
+2. Ça ne sert à rien de continuer à augmenter k, plus on l'augmente, plus le taux d'erreur augmente. Toujours dans l'expérience 1, on passe de H4(k=2) avec `12,4%` à H4(k=8) avec `29,7%` d'erreur moyenne. On dégrade la qualité pour des gains de vitesses qui sont de plus en plus faible.
+
+En regardant les différentes expérience, on peut s'apercevoir que le meilleur compromis se trouve entre k = 2 et k = 4. Ça peut être très rentable comme dans l'expérience 5, ou on a une erreur moyenne de `0%`, donc il n'y a aucune dégradation, on est toujours à `100%` d'optimalité et on on traite pour autant `23,849%`de somments en moins.
+Pareil pour l'expérience 6, avec H4(k=4), on a moins d'un pourcent d'erreur moyenne et on traite `24,410%` de sommets en moins.
+
 ### La perte d’optimalité observée en utilisant H4 avec K > 1 est-elle uniforme selon les jeux de paramètres, ou certains profils de graphe semblent-ils plus robustes à l’augmentation de K ? Avez-vous une explication intuitive de ce phénomène ?
+
+Non, ce n'est pas uniforme.
+
+- Pour les expériences 1 et 2, pour H4(k=2) on a `0%` de solutions optimales trouvées. Alors que pour les expériences 3 à 6, on se situe entre `94%` et `100%`.
+- Pour l'expérience 6, avec H4(k=8) on garde encore `90%` d'optimalité.
+- Sur les expérience 1 et 2 on est sur des labyrithes très ouvert et sans relief, alors que la 6 on est sur un relief dense avec un grande pondération.
+
+Explications intuitives :
+
+- Dans des labyrinthes très ouverts avec peu de relief, commes les expériences 1 à 2, il y a plusieurs chemins possible avec un coût proche. Alors que sur un labyrithe avec une ouverture plus limitée, on aura quasiment qu'un seul chemin possible entre la source et la destination.
+- Dans un relief dense avec des poids élevés, la distance moyenne est plus grande que l'estimation de Manhattan, car l'heuristique ignore les les murs et les pondérations. L'heuristique ne pose problème que si elle dépasse la distance restante. A l'inverse, dans un labyrinthe ouvert
+  et sans relief, l'heuristique Manhattan est déjé proche de la vraie distance. Dès k=2, elle surestime et A* devient glouttonne et perd son optimalité.
