@@ -1,4 +1,4 @@
-# Rapport labo 3 GRE - A*
+# Rapport labo 3 GRE : A*
 - Auteurs : Bleuer Rémy, Duruz Florian
 - Date : 11.06.2026
 - Groupe : O
